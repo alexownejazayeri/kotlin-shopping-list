@@ -1,6 +1,7 @@
 package com.example.myshoppinglistapp
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,12 +9,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,7 +66,31 @@ fun ShoppingListApp() {
                 .padding(16.dp)
         ){
             items(sItems){
-                ShoppingListItem(item = it, onEditClick = { /*TODO*/ }, onDeleteClick = { /*TODO*/ })
+                item ->  // We use this syntax to give "it" a name, more descriptive
+                if (item.isEditing) {
+                    ShoppingItemEditor(item = item, onEditComplete = {
+                        editedName, editedQuantity ->
+                        sItems = sItems.map{ it.copy(isEditing = false)}
+                        val editedItem = sItems.find{ it.id == item.id }  // Find an item in a list
+                        editedItem?.let{
+                            it.name = editedName
+                            it.quantity = editedQuantity
+                        }
+                    })
+                } else {
+                    ShoppingListItem(
+                        item = item,
+                        onEditClick = {
+                            // Finding out which item we're editing and flipping isEditing boolean to true
+                            sItems = sItems.map {
+                                it.copy(isEditing = it.id == item.id)
+                            }
+                        },
+                        onDeleteClick = {
+                            sItems = sItems - item
+                        },
+                    )
+                }
             }
         }
     }
@@ -120,6 +152,93 @@ fun ShoppingListApp() {
 }
 
 @Composable
+fun ShoppingItemEditor(item: ShoppingItem, onEditComplete: (String, Int) -> Unit) {
+    var editedName by remember { mutableStateOf(item.name) }
+    var editedQuantity by remember { mutableStateOf(item.quantity.toString()) }
+    var isEditing by remember { mutableStateOf(item.isEditing) }
+
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .background(Color.White)
+        .padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+        )
+    {
+        Column {
+            BasicTextField(
+                value = editedName,
+                onValueChange = { editedName = it },
+                singleLine = true,
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(8.dp)
+            )
+            BasicTextField(
+                value = editedQuantity,
+                onValueChange = { editedQuantity = it },
+                singleLine = true,
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(8.dp)
+            )
+        }
+
+        Button(
+            onClick = {
+                isEditing = false
+                onEditComplete(editedName, editedQuantity.toIntOrNull() ?: 1)
+            }
+        ){
+            Text("Save")
+        }
+    }
+}
+
+// What is a lambda expression?
+// Syntax:
+// val doubleNumber: (Int) -> Int = { it * 2 }
+// println(doubleNumber(5).toString())
+
+// The code above calls the Lambda. The variable is assigned to a lambda expression.
+// It's still statically typed, think of it as a more concise function syntax.
+// You get 'it' -- the argument -- in the function body.
+
+// What is the map method?
+/*
+    fun main() {
+        val numbers = listOf(1, 2, 3)
+        val doubled = numbers.map{ it * 2 } <- Returns: [2, 4, 6]
+    }
+*/
+
+/* What is the copy method?
+
+    Functional method for creating a copy of an array without mutating reference to original data
+
+    val blueRoseVase = Vase(color = "Blue", design = "Rose")
+    val redRoseVase = blueRoseVase.copy(color = "Red") // Handy and important for various reasons
+
+    data class Vase(val color: String, val design: String)
+*/
+
+// What is let and nullable
+/*
+    - let allows you to use and transform an object without affecting the original object
+
+    fun main() {
+        val name: String? = "Ella" // Can be a string or null (nullable string)
+        name?.let{
+            // Can handle name in this confined scoped, without affecting the original data
+            println(it.toUpperCase())
+
+            // A variable can be nullable
+            // To safely deal with its data, we use let
+        }
+    }
+
+ */
+
+@Composable
 fun ShoppingListItem(
     item: ShoppingItem,
     onEditClick: () -> Unit,
@@ -132,10 +251,20 @@ fun ShoppingListItem(
             .border(
                 border = BorderStroke(2.dp, Color(0xFF018786)),
                 shape = RoundedCornerShape(20)
-            )
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text = item.name, modifier = Modifier.padding(8.dp))
-        Text(text = item.quantity.toString(), modifier = Modifier.padding(8.dp))
+        Text(text = "Qty: ${item.quantity}", modifier = Modifier.padding(8.dp))
+        Row(modifier = Modifier.padding(8.dp)) {
+            IconButton(onClick = onEditClick) {
+                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit shopping list item.")
+            }
+
+            IconButton(onClick = onDeleteClick) {
+                Icon(imageVector = Icons.Default.Delete, contentDescription = "Edit shopping list item.")
+            }
+        }
     }
 }
 
